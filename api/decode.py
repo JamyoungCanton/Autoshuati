@@ -240,6 +240,14 @@ def _process_attachment_cards(cards: List[Dict[str, Any]]) -> List[Dict[str, Any
             continue
 
         # 处理无job字段的特殊任务
+        if card_type == "workid":
+            work_job = _process_work_task(card)
+            if work_job:
+                job_list.append(work_job)
+            else:
+                logger.warning("Work task detected but could not be parsed: {}", card)
+            continue
+
         if card.get("job") is None:
             # 尝试识别阅读任务
             read_job = _process_read_task(card)
