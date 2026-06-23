@@ -680,40 +680,43 @@ def create_app() -> Flask:
         if not course_list:
             return jsonify({"success": False, "error": "courseList is required"}), 400
 
-        with process_state.lock:
-            if process_state.process and process_state.process.poll() is None:
+        state = _state()
+        with state.lock:
+            if state.process and state.process.poll() is None:
                 return jsonify({"success": False, "error": "task is already running"}), 409
 
             import uuid
 
-            process_state.task_id = str(uuid.uuid4())
-            process_state.add_log("info", f"Starting task {process_state.task_id}")
+            state.task_id = str(uuid.uuid4())
+            task_id = state.task_id
+            state.add_log("info", f"Starting task {task_id}")
             child_env = {
                 **os.environ,
                 "PYTHONIOENCODING": "utf-8",
                 "PYTHONUTF8": "1",
             }
-            process_state.process = subprocess.Popen(
+            state.process = subprocess.Popen(
                 [sys.executable, str(ROOT / "main.py"), "-c", str(config_file)],
                 cwd=str(ROOT),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 env=child_env,
             )
+            process = state.process
 
             def pump_logs() -> None:
-                assert process_state.process is not None
-                assert process_state.process.stdout is not None
-                for raw_line in process_state.process.stdout:
+                assert process is not None
+                assert process.stdout is not None
+                for raw_line in process.stdout:
                     line = _decode_process_line(raw_line)
                     level = _log_level_from_line(line)
-                    process_state.add_log(level, line)
-                code = process_state.process.wait()
-                process_state.add_log("info" if code == 0 else "error", f"Process exited with code {code}")
+                    state.add_log(level, line)
+                code = process.wait()
+                state.add_log("info" if code == 0 else "error", f"Process exited with code {code}")
 
             threading.Thread(target=pump_logs, daemon=True).start()
 
-        return jsonify({"success": True, "task_id": process_state.task_id, "message": "Task started"})
+        return jsonify({"success": True, "task_id": task_id, "message": "Task started"})
 
     @app.post("/api/tasks/pause")
     def pause_task():
