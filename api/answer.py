@@ -981,6 +981,17 @@ class AI(Tiku):
         self.name = 'AI大模型答题'
         self.last_request_time = None
 
+    @staticmethod
+    def _normalize_base_url(endpoint: str) -> str:
+        endpoint = str(endpoint or "").strip().rstrip("/")
+        if not endpoint:
+            return endpoint
+        if "/chat/completions" in endpoint:
+            return endpoint.split("/chat/completions")[0].rstrip("/")
+        if endpoint.endswith("/v1"):
+            return endpoint
+        return f"{endpoint}/v1"
+
     def _is_deepseek_v4(self) -> bool:
         return (
             'api.deepseek.com' in (self.endpoint or '').lower()
@@ -1101,7 +1112,7 @@ class AI(Tiku):
             return None
 
     def _init_tiku(self):
-        self.endpoint = self._conf['endpoint']
+        self.endpoint = self._normalize_base_url(self._conf['endpoint'])
         self.key = self._conf['key']
         self.model = self._conf['model']
         self.http_proxy = self._conf['http_proxy']
@@ -1294,5 +1305,10 @@ PROVIDER_REGISTRY = {
     'TikuLike': TikuLike,
     'TikuAdapter': TikuAdapter,
     'AI': AI,
+    'Claude': AI,
+    'FreeModel': AI,
+    'OpenAI': AI,
+    'DeepSeek': AI,
+    'ChatGPT': AI,
     'SiliconFlow': SiliconFlow,
 }

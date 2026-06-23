@@ -189,7 +189,8 @@ def init_chaoxing(common_config, tiku_config):
     # 根据配置文件中的 provider 判断是否为大模型题库
     provider = tiku_config.get('provider', '')
     provider_list = [name.strip() for name in provider.split(',') if name.strip()]
-    if any(name in ['AI', 'SiliconFlow'] for name in provider_list):
+    llm_providers = {'AI', 'SiliconFlow', 'Claude', 'FreeModel', 'OpenAI', 'DeepSeek', 'ChatGPT'}
+    if any(name in llm_providers for name in provider_list):
         check_connection = tiku_config.get('check_llm_connection', 'true').lower() == 'true'
         if check_connection:
             logger.info(f'正在验证大模型配置 (provider={provider})...')
@@ -384,8 +385,7 @@ def process_chapter(chaoxing: Chaoxing, course:dict[str, Any], point:dict[str, A
     """处理单个章节"""
     logger.info(f'当前章节: {point["title"]}')
     if point["has_finished"]:
-        logger.info(f'章节：{point["title"]} 已完成所有任务点')
-        return ChapterResult.SUCCESS
+        logger.info(f'章节：{point["title"]} 在列表页显示已完成，仍将检查任务点状态')
     
     # 随机等待，避免请求过快
     chaoxing.rate_limiter.limit_rate(random_time=True,random_min=0, random_max=0.2)
@@ -398,9 +398,9 @@ def process_chapter(chaoxing: Chaoxing, course:dict[str, Any], point:dict[str, A
     if job_info.get("notOpen", False):
         return ChapterResult.NOT_OPEN
 
-    # 已经默认处理空任务，此处不需要判断
     if not jobs:
-        pass
+        logger.info(f'章节：{point["title"]} 没有需要处理的任务点')
+        return ChapterResult.SUCCESS
 
     # TODO: 个别章节很恶心，多到5个点，可以并行处理，将来会让不同课程不同章节的所有任务点共享一个队列，从而实现全局并行
     job_results:list[StudyResult]=[]

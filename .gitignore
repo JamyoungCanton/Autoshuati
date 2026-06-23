@@ -154,3 +154,9 @@ config*.ini
 .idea/
 .vscode/
 cache.json
+accounts.json
+data/
+frontend/node_modules/
+frontend/dist/
+frontend/screenshots/
+frontend/tsconfig.tsbuildinfo

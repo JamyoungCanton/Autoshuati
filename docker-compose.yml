@@ -1,0 +1,12 @@
+services:
+  chaoxing-console:
+    build: .
+    container_name: chaoxing-console
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      PYTHONUTF8: "1"
+      PYTHONIOENCODING: utf-8
+    volumes:
+      - ./data:/app/data

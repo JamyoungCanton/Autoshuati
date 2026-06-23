@@ -228,10 +228,15 @@ def _process_attachment_cards(cards: List[Dict[str, Any]]) -> List[Dict[str, Any
         处理后的任务列表
     """
     job_list = []
+    skipped_count = 0
     
     for index, card in enumerate(cards):
-        # 跳过已通过的任务
-        if card.get("isPassed", False):
+        card_type = card.get("type", "").lower()
+        # workid 是章节测验/作业，超星返回的 isPassed 标志不可靠，不能在这里直接跳过。
+        if card.get("isPassed", False) and card_type != "workid":
+            job_name = card.get("property", {}).get("title") or card.get("property", {}).get("name") or "未知任务"
+            logger.info(f"跳过已完成的任务: [{card_type or 'unknown'}] {job_name}")
+            skipped_count += 1
             continue
 
         # 处理无job字段的特殊任务
@@ -250,7 +255,6 @@ def _process_attachment_cards(cards: List[Dict[str, Any]]) -> List[Dict[str, Any
             logger.trace(f"New info: {card['otherInfo']}")
 
         # 多维度判断是否为直播任务
-        card_type = card.get("type", "").lower()
         property_data = card.get("property", {})
         prop_type = property_data.get("type", "").lower()
         resource_type = property_data.get("resourceType", "").lower()
@@ -287,6 +291,10 @@ def _process_attachment_cards(cards: List[Dict[str, Any]]) -> List[Dict[str, Any
         else:
             logger.warning(f"Unknown card type: {card_type}")
             logger.warning(card)
+
+    logger.info(f"任务点解析完成: 跳过 {skipped_count} 个已完成任务，待处理 {len(job_list)} 个任务")
+    for job in job_list:
+        logger.info(f"待处理任务: [{job.get('type', 'unknown')}] {job.get('name') or job.get('title') or job.get('jobid') or '未命名'}")
 
     return job_list
 

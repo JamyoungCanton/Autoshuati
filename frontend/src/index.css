@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+:root {
+  color: #10201a;
+  background: #f7faf8;
+  font-family:
+    "Segoe UI",
+    "Microsoft YaHei",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100dvh;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #059669;
+  outline-offset: 2px;
+}
+
+::selection {
+  background: #bbf7d0;
+  color: #052e1d;
+}
+
+@layer components {
+  .field {
+    @apply h-11 w-full rounded-[8px] border border-emerald-950/10 bg-white px-3 text-sm text-[#10201a] shadow-sm shadow-emerald-950/[0.02] transition placeholder:text-emerald-950/35 hover:border-emerald-800/25 focus:border-emerald-700;
+  }
+
+  textarea.field {
+    @apply h-auto py-3 leading-6;
+  }
+
+  .primary-button {
+    @apply inline-flex h-10 items-center justify-center gap-2 rounded-[8px] bg-emerald-700 px-4 text-sm font-semibold text-white transition hover:bg-emerald-800 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .secondary-button {
+    @apply inline-flex h-10 items-center justify-center gap-2 rounded-[8px] border border-emerald-950/10 bg-white px-3 text-sm font-semibold text-emerald-950 transition hover:bg-emerald-50 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60;
+  }
+}
