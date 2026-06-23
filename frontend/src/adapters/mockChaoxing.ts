@@ -93,6 +93,19 @@ async function apiFetch(path: string, init: RequestInit = {}) {
   return fetch(`/api${cleanPath}`, { ...init, headers });
 }
 
+async function readJson<T = unknown>(response: Response, fallback: string): Promise<T> {
+  const text = await response.text();
+  if (!text.trim()) {
+    throw new Error(fallback);
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new Error(`${fallback}: ${text.slice(0, 160)}`);
+  }
+}
+
 export async function fetchServerHealth(): Promise<{ success: boolean; service: string; state: RunState; device_id?: string }> {
   const response = await apiFetch("/health");
   if (!response.ok) {
@@ -213,10 +226,10 @@ export async function saveConsoleConfig(config: ConsoleConfig): Promise<void> {
 
 async function parseApiError(response: Response, fallback: string): Promise<Error> {
   try {
-    const data = await response.json();
+    const data = await readJson<{ error?: string; message?: string }>(response, fallback);
     return new Error(data.error || data.message || fallback);
-  } catch {
-    return new Error(fallback);
+  } catch (error) {
+    return error instanceof Error ? error : new Error(fallback);
   }
 }
 
@@ -299,11 +312,11 @@ export async function startBackendTask(config: ConsoleConfig): Promise<{ task_id
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(config),
   });
-  const data = await response.json();
+  const data = await readJson<{ success?: boolean; error?: string; task_id?: string }>(response, "启动任务响应为空");
   if (!response.ok || data.success === false) {
     throw new Error(data.error || "Failed to start task");
   }
-  return { task_id: data.task_id };
+  return { task_id: data.task_id || "" };
 }
 
 export async function startSelectedCourses(courseIds: string[], config: RuntimeConfig): Promise<{ task_id: string }> {
@@ -319,11 +332,11 @@ export async function startSelectedCourses(courseIds: string[], config: RuntimeC
       },
     }),
   });
-  const data = await response.json();
+  const data = await readJson<{ success?: boolean; error?: string; task_id?: string }>(response, "启动选中课程响应为空");
   if (!response.ok || data.success === false) {
     throw new Error(data.error || "Failed to start selected courses");
   }
-  return { task_id: data.task_id };
+  return { task_id: data.task_id || "" };
 }
 
 export async function pauseBackendTask(): Promise<void> {
@@ -352,7 +365,7 @@ export async function fetchTaskStatus(): Promise<RunState> {
   if (!response.ok) {
     throw new Error("Failed to load task status");
   }
-  const data = await response.json();
+  const data = await readJson<{ status?: { state?: string } }>(response, "任务状态响应为空");
   const state = data.status?.state;
   if (state === "running") {
     return "running";
@@ -371,7 +384,7 @@ export async function fetchBackendLogs(): Promise<ConsoleLog[]> {
   if (!response.ok) {
     throw new Error("Failed to load logs");
   }
-  const data = await response.json();
+  const data = await readJson<{ logs?: ConsoleLog[] }>(response, "日志响应为空");
   return Array.isArray(data.logs) ? data.logs : [];
 }
 
